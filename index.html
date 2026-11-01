@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ChabuaHub Operations Hub</title>
+
+  <!-- PWA & Android APK Optimization Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ChabuaHub">
+  <meta name="theme-color" content="#f8fafc">
+  <!-- Protect against aggressive Android force-dark mode inversion -->
+  <meta name="color-scheme" content="light">
+
+  <!-- Tailwind CSS, FontAwesome & Barcode Scanner -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Outfit"', 'sans-serif'],
+            mono: ['"Outfit"', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0284c7',
+              700: '#0369a1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      -webkit-color-scheme: light;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; background: #f8fafc; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 10% 0%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+                  #f1f5f9;
+      color: #0f172a;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+      overscroll-behavior-y: none;
+    }
+
+    button, a, input, select { touch-action: manipulation; }
+    button { -webkit-user-select: none; user-select: none; }
+
+    /* Number Spinners Hide */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* Hide scrollbars for pill nav */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Custom Clean Scrollbars */
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+    /* Light Frosted Cards */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.06);
+    }
+    .glass-card-glow {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 8px 25px -4px rgba(2, 132, 199, 0.12);
+    }
+
+    /* Modern Light Navigation Pills */
+    .light-nav-pill {
+      background: #ffffff;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .light-nav-pill:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .light-nav-pill.active {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32);
+      transform: translateY(-1px);
+    }
+    .light-nav-pill.active i { color: #ffffff !important; }
+
+    /* Laser Scanning line animation for camera viewport */
+    @keyframes laserSweep {
+      0% { top: 4%; opacity: 0.8; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 4%; opacity: 0.8; }
+    }
+    .laser-line {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #0284c7 25%, #10b981 50%, #0284c7 75%, transparent 100%);
+      box-shadow: 0 0 10px 2px #0284c7;
+      animation: laserSweep 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* Scanner Viewport Overrides */
+    #reader video { object-fit: cover; border-radius: 14px; width: 100% !important; }
+    #reader__dashboard_section button {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border-radius: 10px !important;
+      padding: 6px 14px !important;
+      border: none !important;
+      font-size: 11px !important;
+    }
+
+    /* Circular SVG Gauge */
+    .circle-meter {
+      transition: stroke-dashoffset 0.8s ease-in-out;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Sticky Agent Column on horizontal scroll in Light theme */
+    .sticky-light-col {
+      position: sticky;
+      left: 0;
+      background: #ffffff;
+      z-index: 10;
+    }
+    #todayTable tr:hover .sticky-light-col,
+    #dailySection table tbody tr:hover .sticky-light-col,
+    #conversionContent table tbody tr:hover .sticky-light-col {
+      background: #f0f9ff !important;
+    }
+    #cumulativeTable tr:hover .sticky-light-col,
+    #overallSection table tbody tr:hover .sticky-light-col {
+      background: #eef2ff !important;
+    }
+  </style>
+</head>
+<body class="flex flex-col selection:bg-sky-100 selection:text-sky-800">
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="w-full max-w-4xl mx-auto flex-1 flex flex-col gap-3">
+
+    <!-- 1. TOP APP BAR (Centered Title & Status) -->
+    <header class="glass-card rounded-2xl px-4 py-3 relative flex items-center justify-center border-slate-200">
+      <!-- Centered ChabuaHub, Performance & Time -->
+      <div class="text-center flex flex-col items-center justify-center">
+        <h1 class="text-xl font-black tracking-tight text-slate-900 leading-tight">ChabuaHub</h1>
+        <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 mt-0.5">
+          <span id="statusPulse" class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span id="statusText" class="text-emerald-700 font-extrabold">Performance</span>
+          <span class="text-slate-400">•</span>
+          <span id="lastSyncedTime" class="text-slate-500 font-mono text-[11px] font-bold">Just now</span>
+        </div>
+      </div>
+
+      <!-- Sync Button Positioned at Top-Right -->
+      <div class="absolute right-3.5 top-1/2 -translate-y-1/2">
+        <button id="refreshButton" onclick="fetchSheetData()" class="h-8 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-700 border border-sky-200 font-black text-xs flex items-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-arrows-rotate text-sky-600 text-xs"></i>
+          <span class="hidden sm:inline">Sync</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. HORIZONTAL LIGHT SEGMENTED TABS -->
+    <nav role="tablist" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+      <button id="tabDaily" role="tab" aria-selected="true" onclick="switchMainTab('daily')" class="light-nav-pill active shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-chart-pie text-sky-600"></i> Daily
+      </button>
+      <button id="tabOverall" role="tab" aria-selected="false" onclick="switchMainTab('overall')" class="light-nav-pill shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-layer-group text-indigo-600"></i> Overall
+      </button>
+      <button id="tabScanner" role="tab" aria-selected="false" onclick="switchMainTab('scanner')" class="light-nav-pill shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-qrcode text-amber-600"></i> Scanner
+      </button>
+      <button id="tabCash" role="tab" aria-selected="false" onclick="switchMainTab('cash')" class="light-nav-pill shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-vault text-emerald-600"></i> Cash Tally
+      </button>
+      <button id="tabPickup" role="tab" aria-selected="false" onclick="switchMainTab('pickup')" class="light-nav-pill shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-boxes-packing text-violet-600"></i> Pickup
+      </button>
+      <button id="tabConversion" role="tab" aria-selected="false" onclick="switchMainTab('conversion')" class="light-nav-pill shrink-0 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+        <i class="fa-solid fa-calendar-days text-cyan-700"></i> Date Wise
+      </button>
+    </nav>
+
+    <!-- ==================== 1. DAILY SECTION ==================== -->
+    <section id="dailySection" role="tabpanel" class="space-y-3">
+      <!-- High-Tech Conversion Dial Hero Card -->
+      <div class="glass-card-glow rounded-3xl p-4 sm:p-5 relative overflow-hidden border-sky-200">
+        <div class="flex items-center justify-between gap-4">
+          <!-- Left side stats -->
+          <div class="space-y-2.5 flex-1">
+            <div>
+              <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>
+                Today Performance
+              </span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span id="dailyHeroConv" class="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight">0.00%</span>
+                <span id="dailyHeroConvDiff" class="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">TARGET 85%</span>
+              </div>
+            </div>
+
+            <!-- Total OFD 1st, Delivered 2nd -->
+            <div class="grid grid-cols-2 gap-2 max-w-xs">
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block">Total OFD</span>
+                <span id="dailyHeroOfd" class="text-xl font-black text-slate-900 font-mono">0</span>
+              </div>
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-emerald-700 block">Delivered</span>
+                <span id="dailyHeroDel" class="text-xl font-black text-emerald-600 font-mono">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Circular SVG Conversion Meter -->
+          <div class="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#e2e8f0" stroke-width="8" fill="none" />
+              <circle id="dailyMeterCircle" class="circle-meter" cx="50" cy="50" r="40" stroke="url(#meterGradientLight)" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+              <defs>
+                <linearGradient id="meterGradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0284c7" />
+                  <stop offset="50%" stop-color="#2563eb" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center text-center">
+              <i class="fa-solid fa-person-biking text-sky-600 text-sm mb-0.5"></i>
+              <span id="dailyHeroAgents" class="text-lg font-black text-slate-900 leading-none">0</span>
+              <span class="text-[9px] text-slate-500 uppercase font-black">Agents</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini status chips row (Clean labels: ORC, CNR, RFR, Heavy Load) -->
+        <div class="grid grid-cols-4 gap-2 pt-3 mt-3 border-t border-slate-200 text-center">
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-rose-600 block">ORC</span>
+            <span id="dailyOrc" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-amber-600 block">CNR</span>
+            <span id="dailyCnr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-indigo-600 block">RFR</span>
+            <span id="dailyRfr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-sky-600 block">Heavy Load</span>
+            <span id="dailyHeavy" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & View Mode Switcher -->
+      <div class="glass-card rounded-2xl p-2.5 flex items-center justify-between gap-2.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="searchDaily" oninput="renderTables()" type="search" placeholder="Filter Wishmasters..." class="w-full pl-8 pr-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 shadow-inner">
+        </div>
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+          <button id="viewToggleDailyCards" onclick="setAgentView('daily', 'cards')" title="Card View" class="px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition">
+            <i class="fa-solid fa-id-card"></i>
+          </button>
+          <button id="viewToggleDailyTable" onclick="setAgentView('daily', 'table')" title="Table View" class="px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition">
+            <i class="fa-solid fa-table-list"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Agent Cards Container (Default) -->
+      <div id="dailyCardsContainer" class="space-y-2.5"></div>
+
+      <!-- Agent Table Container (Optional) -->
+      <div id="dailyTableContainer" class="hidden glass-card rounded-2xl overflow-hidden border border-slate-200">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-xs text-center border-collapse">
+            <thead class="bg-slate-100 text-slate-600 font-black uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3 text-left sticky-light-col">Wishmaster</th>
+                <th class="p-3">Conv %</th>
+                <th class="p-3">OFD</th>
+                <th class="p-3 text-emerald-700">DEL</th>
+                <th class="p-3 text-rose-600">ORC</th>
+                <th class="p-3 text-amber-600">CNR</th>
+                <th class="p-3 text-indigo-600">RFR</th>
+                <th class="p-3 text-sky-600">Heavy</th>
+              </tr>
+            </thead>
+            <tbody id="todayTable" class="divide-y divide-slate-200 font-bold text-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. OVERALL SECTION ==================== -->
+    <section id="overallSection" role="tabpanel" class="hidden space-y-3">
+      <!-- Cumulative Hero Card -->
+      <div class="glass-card-glow rounded-3xl p-4 sm:p-5 relative overflow-hidden border-indigo-200">
+        <div class="flex items-center justify-between gap-4">
+          <div class="space-y-2.5 flex-1">
+            <div>
+              <span class="text-[11px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                <i class="fa-solid fa-layer-group text-indigo-600"></i>
+                MTD Cumulative Rate
+              </span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span id="cumHeroConv" class="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight">0.00%</span>
+                <span class="text-xs font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">ALL TIME</span>
+              </div>
+            </div>
+
+            <!-- Total OFD 1st, Total DEL 2nd -->
+            <div class="grid grid-cols-2 gap-2 max-w-xs">
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block">Total OFD</span>
+                <span id="cumHeroOfd" class="text-xl font-black text-slate-900 font-mono">0</span>
+              </div>
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-emerald-700 block">Total DEL</span>
+                <span id="cumHeroDel" class="text-xl font-black text-emerald-600 font-mono">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#e2e8f0" stroke-width="8" fill="none" />
+              <circle id="cumMeterCircle" class="circle-meter" cx="50" cy="50" r="40" stroke="url(#cumGradientLight)" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+              <defs>
+                <linearGradient id="cumGradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#4f46e5" />
+                  <stop offset="100%" stop-color="#0284c7" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center text-center">
+              <i class="fa-solid fa-users text-indigo-600 text-sm mb-0.5"></i>
+              <span id="cumHeroAgents" class="text-lg font-black text-slate-900 leading-none">0</span>
+              <span class="text-[9px] text-slate-500 uppercase font-black">Total</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 pt-3 mt-3 border-t border-slate-200 text-center">
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-rose-600 block">ORC</span>
+            <span id="cumOrc" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-amber-600 block">CNR</span>
+            <span id="cumCnr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-indigo-600 block">RFR</span>
+            <span id="cumRfr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-sky-600 block">Heavy</span>
+            <span id="cumHeavy" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & View Toggle -->
+      <div class="glass-card rounded-2xl p-2.5 flex items-center justify-between gap-2.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="searchOverall" oninput="renderTables()" type="search" placeholder="Filter Wishmasters..." class="w-full pl-8 pr-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-inner">
+        </div>
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+          <button id="viewToggleOverallCards" onclick="setAgentView('overall', 'cards')" class="px-3 py-1.5 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-sm transition">
+            <i class="fa-solid fa-id-card"></i>
+          </button>
+          <button id="viewToggleOverallTable" onclick="setAgentView('overall', 'table')" class="px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition">
+            <i class="fa-solid fa-table-list"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="cumCardsContainer" class="space-y-2.5"></div>
+
+      <div id="cumTableContainer" class="hidden glass-card rounded-2xl overflow-hidden border border-slate-200">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-xs text-center border-collapse">
+            <thead class="bg-slate-100 text-slate-600 font-black uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3 text-left sticky-light-col">Wishmaster</th>
+                <th class="p-3">Conv %</th>
+                <th class="p-3">OFD</th>
+                <th class="p-3 text-emerald-700">DEL</th>
+                <th class="p-3 text-rose-600">ORC</th>
+                <th class="p-3 text-amber-600">CNR</th>
+                <th class="p-3 text-indigo-600">RFR</th>
+                <th class="p-3 text-sky-600">Heavy</th>
+              </tr>
+            </thead>
+            <tbody id="cumulativeTable" class="divide-y divide-slate-200 font-bold text-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. LIVE SCANNER PRO ==================== -->
+    <section id="scannerSection" role="tabpanel" class="hidden space-y-3 max-w-lg mx-auto w-full">
+      <div class="glass-card rounded-3xl p-4 sm:p-5 space-y-3.5 border-slate-200">
+
+        <!-- Top Mode Switcher -->
+        <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-black">
+            <i class="fa-solid fa-barcode"></i> AWB Scanner HUD
+          </div>
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-black">
+            <button id="modeSingleBtn" onclick="setScannerMode('single')" class="px-3 py-1 rounded-lg bg-white text-slate-900 shadow-sm transition">Single</button>
+            <button id="modeBatchBtn" onclick="setScannerMode('batch')" class="px-3 py-1 rounded-lg text-slate-500 hover:text-slate-900 transition">Batch (<span id="batchCount">0</span>)</button>
+          </div>
+        </div>
+
+        <!-- Camera Viewport with Cyber-Laser Overlay -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-black text-slate-600">
+            <span>Live Camera Feed</span>
+            <button onclick="toggleCamera()" id="toggleCamBtn" class="text-sky-600 active:scale-95 flex items-center gap-1 font-black">
+              <i class="fa-solid fa-video-slash text-xs"></i> <span>Stop Camera</span>
+            </button>
+          </div>
+          <div class="relative overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 min-h-[175px] flex items-center justify-center shadow-inner">
+            <div id="laserLine" class="laser-line"></div>
+            <div id="reader" aria-label="Camera scanner" class="w-full">
+              <span class="text-xs text-slate-400 font-bold">Initializing camera optical sensor...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Lookup Bar -->
+        <div class="flex gap-2">
+          <input type="text" id="manualInput" onkeydown="if(event.key==='Enter') manualScan()" placeholder="Enter Tracking ID / AWB..." class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs font-mono font-bold focus:outline-none focus:border-amber-500 shadow-inner">
+          <button onclick="manualScan()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs transition active:scale-95 shadow-md shadow-amber-500/20">
+            Lookup
+          </button>
+        </div>
+
+        <!-- Scan Result HUD -->
+        <div id="scannerResultBox" role="status" aria-live="polite" class="hidden rounded-2xl p-4 border border-slate-200 space-y-3 transition-all bg-white shadow-sm">
+          <div class="flex items-center justify-between">
+            <span id="scanStatusBadge" class="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded tracking-wider">STATUS</span>
+            <span id="scanTime" class="text-[10px] text-slate-500 font-mono font-bold"></span>
+          </div>
+
+          <!-- Order ID & Copy -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div class="truncate mr-2">
+              <span class="text-[9px] uppercase font-bold text-slate-500 block tracking-wider">Order ID</span>
+              <span id="resOrderId" class="text-base font-black text-emerald-700 font-mono tracking-wide truncate block">--</span>
+            </div>
+            <button onclick="copyOrderId()" title="Copy Order ID" class="w-9 h-9 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center justify-center transition active:scale-90 shrink-0 shadow-sm">
+              <i class="fa-regular fa-copy text-xs"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center font-mono">
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <span class="text-[9px] uppercase font-bold text-slate-500 block">Price</span>
+              <span id="resPrice" class="text-xs font-black text-amber-700 truncate block">₹0</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <span class="text-[9px] uppercase font-bold text-slate-500 block">Bag ID</span>
+              <span id="resBagId" class="text-xs font-black text-indigo-700 truncate block">--</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <span class="text-[9px] uppercase font-bold text-slate-500 block">Tracking</span>
+              <span id="resTrackingId" class="text-[10px] font-black text-slate-700 truncate block">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Feed -->
+        <div class="space-y-2 pt-2 border-t border-slate-200">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Scans (<span id="historyCount">0</span>)</span>
+            <div class="flex items-center gap-2">
+              <button onclick="exportBatchScans()" id="exportBatchBtn" class="hidden text-sky-600 hover:underline text-[11px] font-black">Export</button>
+              <button onclick="clearScanHistory()" class="text-rose-600 hover:underline text-[11px] font-black">Clear</button>
+            </div>
+          </div>
+          <div id="scanHistoryList" class="max-h-44 overflow-y-auto custom-scroll space-y-1.5 text-xs">
+            <div class="text-center py-4 text-slate-400 font-bold text-xs font-mono">No items scanned yet in this session.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 4. CASH COUNTER ==================== -->
+    <section id="cashSection" role="tabpanel" class="hidden max-w-md mx-auto w-full space-y-3">
+      <!-- Sub-tabs -->
+      <div class="flex bg-slate-200/80 p-1 rounded-2xl border border-slate-300">
+        <button id="subTabCalc" onclick="switchCashSubTab('calc')" class="flex-1 py-1.5 text-center text-xs font-black rounded-xl bg-white text-slate-900 shadow-sm transition">Counter</button>
+        <button id="subTabReport" onclick="switchCashSubTab('report')" class="flex-1 py-1.5 text-center text-xs font-black rounded-xl text-slate-600 hover:text-slate-900 transition">Tally Slip</button>
+      </div>
+
+      <!-- Calculation Panel -->
+      <div id="cashCalcPanel" class="space-y-3">
+        <!-- High-contrast Cash Total Hero -->
+        <div class="glass-card-glow rounded-3xl p-5 text-center space-y-1 border-emerald-200">
+          <span class="text-[10px] font-mono uppercase tracking-widest text-emerald-800 font-black block">Total Physical Cash</span>
+          <div class="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight" id="inpage-total-amount">₹0</div>
+          <p id="total-in-words" class="text-xs text-slate-600 font-semibold italic pt-1 truncate">Zero Rupees Only</p>
+        </div>
+
+        <!-- Teller Target Comparison -->
+        <div class="glass-card rounded-2xl p-3.5 space-y-2 border-slate-200">
+          <label for="teller-balance-input" class="text-xs font-black text-slate-700 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-amber-500"></i> Teller Expected Amount</span>
+            <span class="text-[10px] text-slate-400">Optional</span>
+          </label>
+          <input type="number" min="0" id="teller-balance-input" oninput="calculateCash()" placeholder="Enter system total..." class="w-full py-2.5 px-3 bg-white border-2 border-amber-300 rounded-xl text-base font-mono font-black text-slate-900 focus:outline-none focus:border-amber-500 shadow-inner">
+          <div id="tellerStatusBadge" class="hidden text-center text-xs font-black pt-1"></div>
+        </div>
+
+        <!-- Denomination Note Tiles -->
+        <div class="glass-card rounded-2xl p-3.5 space-y-2 border-slate-200">
+          <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider block">Denomination Counts</span>
+          <div id="denomRows" class="space-y-2"></div>
+
+          <!-- Coins row -->
+          <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200 text-xs font-bold">
+            <div class="flex items-center gap-1.5 w-24">
+              <span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-[10px]">🪙</span>
+              <span class="text-slate-700 font-black">Coins</span>
+            </div>
+            <span class="text-slate-400 font-mono">=</span>
+            <input type="number" min="0" id="count-coins" oninput="calculateCash()" placeholder="Total ₹" class="w-24 py-1.5 px-2 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-black text-slate-900 focus:outline-none focus:border-sky-500 shadow-inner">
+            <span class="text-slate-400 font-mono">=</span>
+            <span class="w-24 text-right font-mono font-black text-slate-900" id="subtotal-coins">₹0</span>
+          </div>
+        </div>
+
+        <button onclick="resetCash()" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-black text-xs border border-slate-300 transition shadow-sm">
+          <i class="fa-solid fa-rotate-right mr-1.5 text-slate-500"></i> Clear All Cash Fields
+        </button>
+      </div>
+
+      <!-- Slip Report Panel (Clean 1-Tap Copy Button Added) -->
+      <div id="cashReportPanel" class="hidden glass-card rounded-3xl p-5 space-y-4 border-slate-200">
+        <div class="text-center pb-3 border-b border-slate-200">
+          <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono">CHABUA HUB CASH TALLY SLIP</h3>
+          <span id="report-date-str" class="text-[10px] text-slate-500 font-mono font-bold"></span>
+        </div>
+
+        <div id="report-item-list" class="space-y-2 text-xs font-mono text-slate-700 font-bold"></div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-between items-center font-mono">
+          <span class="text-xs text-slate-600 uppercase font-black">Grand Tally</span>
+          <span id="report-total-sum" class="text-2xl font-black text-emerald-700">₹0</span>
+        </div>
+
+        <button onclick="copyCashReport()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs flex items-center justify-center gap-2 active:scale-95 transition shadow-sm">
+          <i class="fa-regular fa-copy"></i> Copy Tally Summary
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== 5. PICKUP SECTION ==================== -->
+    <section id="pickupSection" role="tabpanel" class="hidden space-y-3">
+      <!-- Pickup Header Banner -->
+      <div class="glass-card rounded-3xl p-4 flex items-center justify-between border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 shadow-sm">
+            <i class="fa-solid fa-box text-base"></i>
+          </div>
+          <div>
+            <span class="text-[10px] font-black text-purple-700 uppercase tracking-wider block">Pickup Pipeline</span>
+            <span id="pickupCountBadge" class="text-lg font-black text-slate-900 font-mono">0 Shipments</span>
+          </div>
+        </div>
+        <button id="pickupRefreshButton" onclick="loadPickupData(true)" class="h-9 px-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-black flex items-center gap-1.5 transition active:scale-95 shadow-sm">
+          <i class="fa-solid fa-arrows-rotate text-purple-600 text-[11px]"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Search & Toggle -->
+      <div class="glass-card rounded-2xl p-2.5 flex items-center justify-between gap-2.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="searchPickup" oninput="filterPickupTable()" type="search" placeholder="Search Pickup by AWB, FE, Status..." class="w-full pl-8 pr-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500 shadow-inner">
+        </div>
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+          <button id="viewTogglePickupCards" onclick="setPickupView('cards')" class="px-3 py-1.5 text-xs font-black rounded-lg bg-purple-600 text-white shadow-sm transition">
+            <i class="fa-solid fa-id-card"></i>
+          </button>
+          <button id="viewTogglePickupTable" onclick="setPickupView('table')" class="px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition">
+            <i class="fa-solid fa-table-list"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pickup Cards Container -->
+      <div id="pickupCardsContainer" class="space-y-2.5">
+        <div class="glass-card p-8 rounded-2xl text-center text-slate-400 text-xs font-bold">
+          <i class="fa-solid fa-spinner fa-spin mr-2 text-purple-600"></i> Loading Pickup shipments...
+        </div>
+      </div>
+
+      <!-- Pickup Table Container -->
+      <div id="pickupTableContainer" class="hidden glass-card rounded-2xl overflow-hidden border border-slate-200">
+        <div id="pickupContent" class="text-xs text-slate-800" role="status" aria-live="polite">
+          <p class="text-center py-8 text-slate-400 font-bold">Loading Pickup data...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 6. DATE WISE SECTION ==================== -->
+    <section id="conversionSection" role="tabpanel" class="hidden space-y-3">
+      <!-- Date Selector HUD -->
+      <div class="glass-card rounded-3xl p-3 sm:p-4 flex items-center justify-between gap-2 border-slate-200">
+        <div class="flex items-center gap-2 flex-1">
+          <label for="conversionDate" class="text-xs font-black text-slate-700 flex items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-calendar-day text-sky-600"></i> Select Date:
+          </label>
+          <input id="conversionDate" type="date" onchange="onConversionDateChange()" class="w-full max-w-[170px] px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-sky-500 shadow-inner">
+        </div>
+        <button id="conversionRefreshButton" onclick="loadConversionData(true)" class="px-3.5 py-1.5 text-xs font-black rounded-xl bg-sky-50 text-sky-700 border border-sky-200 shrink-0 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
+          <i class="fa-solid fa-arrows-rotate text-[11px]"></i> Load Date
+        </button>
+      </div>
+
+      <!-- Date Wise Hero Card -->
+      <div class="glass-card-glow rounded-3xl p-4 sm:p-5 relative overflow-hidden border-sky-200">
+        <div class="flex items-center justify-between gap-4">
+          <div class="space-y-2.5 flex-1">
+            <div>
+              <span class="text-[11px] font-black text-sky-700 uppercase tracking-widest flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-check text-sky-600"></i>
+                Date Wise Performance
+              </span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span id="convHeroConv" class="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight">0.00%</span>
+                <span class="text-xs font-black px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">DATE WISE</span>
+              </div>
+            </div>
+
+            <!-- Total OFD 1st, Delivered 2nd -->
+            <div class="grid grid-cols-2 gap-2 max-w-xs">
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-slate-500 block">Total OFD</span>
+                <span id="convHeroOfd" class="text-xl font-black text-slate-900 font-mono">0</span>
+              </div>
+              <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm">
+                <span class="text-[10px] uppercase font-bold text-emerald-700 block">Delivered</span>
+                <span id="convHeroDel" class="text-xl font-black text-emerald-600 font-mono">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#e2e8f0" stroke-width="8" fill="none" />
+              <circle id="convMeterCircle" class="circle-meter" cx="50" cy="50" r="40" stroke="url(#convGradientLight)" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+              <defs>
+                <linearGradient id="convGradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0284c7" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center text-center">
+              <i class="fa-solid fa-motorcycle text-sky-600 text-sm mb-0.5"></i>
+              <span id="convHeroAgents" class="text-lg font-black text-slate-900 leading-none">0</span>
+              <span class="text-[9px] text-slate-500 uppercase font-black">Agents</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 pt-3 mt-3 border-t border-slate-200 text-center">
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-rose-600 block">ORC</span>
+            <span id="convOrc" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-amber-600 block">CNR</span>
+            <span id="convCnr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-indigo-600 block">RFR</span>
+            <span id="convRfr" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+          <div class="bg-white rounded-xl p-2 border border-slate-200 shadow-sm">
+            <span class="text-[10px] uppercase font-black text-sky-600 block">Heavy</span>
+            <span id="convHeavy" class="text-sm font-mono font-black text-slate-900">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Toggle -->
+      <div class="glass-card rounded-2xl p-2.5 flex items-center justify-between gap-2.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="searchConversion" oninput="renderConversionAgents()" type="search" placeholder="Filter Wishmasters (Date Wise)..." class="w-full pl-8 pr-3 py-2 text-xs font-bold bg-white border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 shadow-inner">
+        </div>
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+          <button id="viewToggleConvCards" onclick="setConversionView('cards')" class="px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition">
+            <i class="fa-solid fa-id-card"></i>
+          </button>
+          <button id="viewToggleConvTable" onclick="setConversionView('table')" class="px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition">
+            <i class="fa-solid fa-table-list"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="convCardsContainer" class="space-y-2.5"></div>
+
+      <div id="convTableContainer" class="hidden glass-card rounded-2xl overflow-hidden border border-slate-200">
+        <div id="conversionContent" class="text-xs text-slate-800" role="status" aria-live="polite">
+          <p class="text-center py-8 text-slate-400 font-bold">Loading data...</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Toast Notification -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300">
+    <div class="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold text-white flex items-center gap-2.5">
+      <span id="toastIcon" class="text-emerald-400 font-black">✓</span>
+      <span id="toastMsg" class="font-mono">Notification</span>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgfAHlddgGLVKK2urgEDAzx2FXwo1KuNg2yynnblGCS07gBclCHIM4xUTkEdK8YVWzRw/exec";
+    const SHEET_ID = "1AAK0GM4NzmpdLCvbHUFd8bQMJyWIffXW5PNBuRU4Xsk";
+
+    let todayData = [];
+    let cumulativeData = [];
+    let rawPickupRows = [];
+    let currentConversionAgents = [];
+    let currentConversionResult = null;
+    let scannerInstance = null;
+    let cameraActive = true;
+    let scannerMode = 'single';
+    let scanHistory = [];
+    let fetchInProgress = false;
+    let lastScanCode = "";
+    let lastScanTime = 0;
+    let toastTimer = null;
+    let lastFetchOk = 0;
+    let conversionCache = {};
+    let conversionReqId = 0;
+    let currentAgentViews = { daily: 'cards', overall: 'cards', pickup: 'cards', conversion: 'cards' };
+    const denoms = [500, 200, 100, 50, 20, 10];
+
+    // Note styling in Light Mode
+    const denomColors = {
+      500: { border: 'border-slate-300', badge: 'bg-stone-100 text-stone-800', dot: 'bg-stone-500' },
+      200: { border: 'border-orange-200', badge: 'bg-orange-100 text-orange-800', dot: 'bg-orange-500' },
+      100: { border: 'border-purple-200', badge: 'bg-purple-100 text-purple-800', dot: 'bg-purple-500' },
+      50:  { border: 'border-cyan-200', badge: 'bg-cyan-100 text-cyan-800', dot: 'bg-cyan-500' },
+      20:  { border: 'border-lime-200', badge: 'bg-lime-100 text-lime-800', dot: 'bg-lime-600' },
+      10:  { border: 'border-amber-200', badge: 'bg-amber-100 text-amber-900', dot: 'bg-amber-600' }
+    };
+
+    // Shared unlocked Audio Context for instant mobile sound
+    let sharedAudioCtx = null;
+    function getAudioContext() {
+      if (!sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sharedAudioCtx = new AudioCtx();
+      }
+      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+        sharedAudioCtx.resume();
+      }
+      return sharedAudioCtx;
+    }
+    // Unlock on first tap
+    window.addEventListener('touchstart', () => getAudioContext(), { once: true });
+    window.addEventListener('click', () => getAudioContext(), { once: true });
+
+    function fetchDirectGoogleSheetTab(sheetNames) {
+      const candidates = Array.isArray(sheetNames) ? sheetNames : [sheetNames];
+      return new Promise((resolve) => {
+        const trySheet = (index) => {
+          if (index >= candidates.length) { resolve([]); return; }
+          const sheetName = candidates[index];
+          const cbName = "gvizCb_" + Math.random().toString(36).slice(2);
+          const script = document.createElement("script");
+          const timer = setTimeout(() => { cleanup(); trySheet(index + 1); }, 8000);
+
+          function cleanup() {
+            clearTimeout(timer);
+            delete window[cbName];
+            if (script.parentNode) script.parentNode.removeChild(script);
+          }
+
+          window[cbName] = function(response) {
+            cleanup();
+            try {
+              if (!response || response.status === "error" || !response.table) {
+                trySheet(index + 1); return;
+              }
+              const cols = (response.table.cols || []).map((c, idx) => String(c.label || c.id || `Col_${idx + 1}`).trim());
+              const rawRows = response.table.rows || [];
+              let headers = cols;
+              let startIdx = 0;
+              const hasRealLabels = response.table.cols.some(c => c.label && String(c.label).trim() !== "");
+              if (!hasRealLabels && rawRows.length > 0) {
+                headers = (rawRows[0].c || []).map((cell, idx) => String(cell?.f ?? cell?.v ?? `Col_${idx + 1}`).trim());
+                startIdx = 1;
+              }
+              const parsed = [];
+              for (let i = startIdx; i < rawRows.length; i++) {
+                const cells = rawRows[i]?.c || [];
+                const obj = {};
+                let hasData = false;
+                headers.forEach((h, cIdx) => {
+                  if (!h) return;
+                  const cell = cells[cIdx];
+                  const val = cell ? (cell.f !== undefined && cell.f !== null ? cell.f : (cell.v ?? "")) : "";
+                  if (val !== "" && val !== null) hasData = true;
+                  obj[h] = val;
+                });
+                if (hasData) parsed.push(obj);
+              }
+              if (parsed.length > 0) resolve(parsed);
+              else trySheet(index + 1);
+            } catch (e) { trySheet(index + 1); }
+          };
+
+          script.onerror = () => { cleanup(); trySheet(index + 1); };
+          script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cbName}&sheet=${encodeURIComponent(sheetName)}`;
+          document.body.appendChild(script);
+        };
+        trySheet(0);
+      });
+    }
+
+    // Android Hardware Back-Button Support via History API
+    function switchMainTab(tab, updateHistory = true) {
+      ['daily', 'overall', 'scanner', 'cash', 'pickup', 'conversion'].forEach(t => {
+        const sec = document.getElementById(t + 'Section');
+        if (sec) sec.classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById('tab' + (t === 'overall' ? 'Overall' : t.charAt(0).toUpperCase() + t.slice(1)));
+        if (btn) {
+          const selected = t === tab;
+          btn.classList.toggle('active', selected);
+          btn.setAttribute('aria-selected', String(selected));
+        }
+      });
+
+      if (updateHistory && window.history && window.history.pushState) {
+        window.history.pushState({ tab: tab }, '', '#' + tab);
+      }
+
+      if (tab === 'scanner') {
+        setTimeout(() => startScanner(), 150);
+      } else {
+        stopScanner();
+      }
+      if (tab === 'pickup') loadPickupData();
+      if (tab === 'conversion') loadConversionData();
+    }
+
+    window.addEventListener('popstate', (e) => {
+      const targetTab = (e.state && e.state.tab) || 'daily';
+      switchMainTab(targetTab, false);
+    });
+
+    function setAgentView(section, viewType) {
+      currentAgentViews[section] = viewType;
+      const isDaily = section === 'daily';
+      const cardsEl = document.getElementById(isDaily ? 'dailyCardsContainer' : 'cumCardsContainer');
+      const tableEl = document.getElementById(isDaily ? 'dailyTableContainer' : 'cumTableContainer');
+      const cardBtn = document.getElementById(isDaily ? 'viewToggleDailyCards' : 'viewToggleOverallCards');
+      const tableBtn = document.getElementById(isDaily ? 'viewToggleDailyTable' : 'viewToggleOverallTable');
+
+      if (viewType === 'cards') {
+        cardsEl.classList.remove('hidden');
+        tableEl.classList.add('hidden');
+        cardBtn.className = isDaily
+          ? "px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition"
+          : "px-3 py-1.5 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-sm transition";
+        tableBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+      } else {
+        cardsEl.classList.add('hidden');
+        tableEl.classList.remove('hidden');
+        cardBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+        tableBtn.className = isDaily
+          ? "px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition"
+          : "px-3 py-1.5 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-sm transition";
+      }
+    }
+
+    function setPickupView(viewType) {
+      currentAgentViews.pickup = viewType;
+      const cardsEl = document.getElementById('pickupCardsContainer');
+      const tableEl = document.getElementById('pickupTableContainer');
+      const cardBtn = document.getElementById('viewTogglePickupCards');
+      const tableBtn = document.getElementById('viewTogglePickupTable');
+
+      if (viewType === 'cards') {
+        cardsEl.classList.remove('hidden');
+        tableEl.classList.add('hidden');
+        cardBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg bg-purple-600 text-white shadow-sm transition";
+        tableBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+      } else {
+        cardsEl.classList.add('hidden');
+        tableEl.classList.remove('hidden');
+        cardBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+        tableBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg bg-purple-600 text-white shadow-sm transition";
+      }
+    }
+
+    function setConversionView(viewType) {
+      currentAgentViews.conversion = viewType;
+      const cardsEl = document.getElementById('convCardsContainer');
+      const tableEl = document.getElementById('convTableContainer');
+      const cardBtn = document.getElementById('viewToggleConvCards');
+      const tableBtn = document.getElementById('viewToggleConvTable');
+
+      if (viewType === 'cards') {
+        cardsEl.classList.remove('hidden');
+        tableEl.classList.add('hidden');
+        cardBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition";
+        tableBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+      } else {
+        cardsEl.classList.add('hidden');
+        tableEl.classList.remove('hidden');
+        cardBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg text-slate-500 hover:text-slate-900 transition";
+        tableBtn.className = "px-3 py-1.5 text-xs font-black rounded-lg bg-sky-600 text-white shadow-sm transition";
+      }
+    }
+
+    function getConvBadge(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return `<span class="px-2 py-0.5 rounded-md font-mono text-[10px] font-black bg-slate-100 text-slate-500 border border-slate-200">0.00%</span>`;
+      let style = num >= 85 
+        ? "bg-emerald-50 text-emerald-800 border-emerald-300" 
+        : (num >= 83 ? "bg-amber-50 text-amber-800 border-amber-300" : "bg-rose-50 text-rose-800 border-rose-300");
+      return `<span class="px-2.5 py-0.5 rounded-lg font-mono text-[11px] font-black border ${style}">${num.toFixed(2)}%</span>`;
+    }
+
+    function updateSvgMeter(circleId, pct) {
+      const circle = document.getElementById(circleId);
+      if (!circle) return;
+      const radius = 40;
+      const circumference = 2 * Math.PI * radius; // 251.2
+      const validPct = Math.min(100, Math.max(0, parseFloat(pct) || 0));
+      const offset = circumference - (validPct / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+    }
+
+    function normalize(k) { return String(k ?? "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function toNumber(v) { const n = parseFloat(String(v ?? 0).replace(/,/g, "").replace(/%/g, "")); return Number.isFinite(n) ? n : 0; }
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    function normalizeSheetPayload(payload) {
+      if (!Array.isArray(payload) || payload.length === 0) return [];
+      if (Array.isArray(payload[0])) {
+        const headers = payload[0].map((h, i) => String(h || `Col_${i + 1}`).trim());
+        const result = [];
+        for (let i = 1; i < payload.length; i++) {
+          const row = payload[i];
+          if (!Array.isArray(row) || row.every(c => c === "" || c === null || c === undefined)) continue;
+          const obj = {};
+          headers.forEach((h, idx) => { obj[h] = row[idx]; });
+          result.push(obj);
+        }
+        return result;
+      }
+      return payload;
+    }
+
+    function getValue(row, aliases) {
+      const entries = Object.entries(row || {}).map(([key, value]) => ({ key: normalize(key), value }));
+      const exact = entries.find(item => aliases.includes(item.key));
+      if (exact && exact.value !== "" && exact.value != null) return exact.value;
+      const long = aliases.filter(a => a.length >= 3);
+      const tail = entries.find(item => long.some(a => item.key.endsWith(a)));
+      if (tail) return tail.value;
+      const spec = entries.find(item => long.some(a => item.key.includes(a)));
+      return spec ? spec.value : 0;
+    }
+
+    function processRows(rawRows) {
+      const rows = normalizeSheetPayload(rawRows);
+      if (!Array.isArray(rows)) return [];
+      return rows.filter(r => {
+        if (!r) return false;
+        const joined = String(Object.values(r).join(" ")).toLowerCase().trim();
+        return joined.length > 0 && !joined.includes("grand total") && !joined.startsWith("total");
+      }).map((row, idx) => {
+        const ofd = toNumber(getValue(row, ["sumofd", "ofd", "totalofd", "outfordelivery"]));
+        const del = toNumber(getValue(row, ["sumdel", "del", "delivered", "success"]));
+        return {
+          name: String(getValue(row, ["agentname", "name", "wishmaster", "employee", "fe", "fename"]) || `Agent ${idx + 1}`).trim(),
+          ofd, del,
+          orc: toNumber(getValue(row, ["sumorc", "orc", "cancel", "rejected"])),
+          cnr: toNumber(getValue(row, ["sumcnr", "cnr", "notreachable", "noresponse"])),
+          rfr: toNumber(getValue(row, ["sumrfr", "rfr", "return", "reschedule", "replacement"])),
+          heavyLoad: toNumber(getValue(row, ["sumhavyload", "heavyload", "havyload", "load", "heavy"])),
+          conversion: ofd > 0 ? ((del / ofd) * 100).toFixed(2) : "0.00"
+        };
+      });
+    }
+
+    function setConnectionStatus(state) {
+      const pulse = document.getElementById("statusPulse");
+      const txt = document.getElementById("statusText");
+      if (!pulse || !txt) return;
+      if (state === "online") {
+        pulse.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
+        txt.className = "text-emerald-700 font-extrabold";
+        txt.textContent = "Performance";
+      } else if (state === "loading") {
+        pulse.className = "w-2 h-2 rounded-full bg-amber-500 inline-block animate-ping";
+        txt.className = "text-amber-700 font-extrabold";
+        txt.textContent = "Syncing...";
+      } else {
+        pulse.className = "w-2 h-2 rounded-full bg-rose-500 inline-block";
+        txt.className = "text-rose-600 font-extrabold";
+        txt.textContent = "Offline";
+      }
+    }
+
+    async function fetchSheetData(silent = false) {
+      if (fetchInProgress) return;
+      fetchInProgress = true;
+      const btn = document.getElementById("refreshButton");
+      if (btn) {
+        btn.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin text-sky-600 text-xs"></i> <span class="hidden sm:inline">Syncing</span>`;
+        btn.disabled = true;
+      }
+      setConnectionStatus("loading");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        todayData = processRows(data.liveData || []);
+        cumulativeData = processRows(data.cumulativeData || []);
+        if (Array.isArray(data.pickupData) && data.pickupData.length > 0) {
+          rawPickupRows = normalizeSheetPayload(data.pickupData);
+        }
+        conversionCache = {};
+        lastFetchOk = Date.now();
+
+        renderDashboard();
+        filterPickupTable();
+        setConnectionStatus("online");
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('lastSyncedTime').textContent = timeStr;
+        if (!silent) showToast("Data synchronized!");
+      } catch (err) {
+        console.error("Refresh failed:", err);
+        setConnectionStatus("offline");
+        showToast("Sync failed. Check connection.", true);
+      } finally {
+        clearTimeout(timeoutId);
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-arrows-rotate text-sky-600 text-xs"></i> <span class="hidden sm:inline">Sync</span>`;
+          btn.disabled = false;
+        }
+        fetchInProgress = false;
+      }
+    }
+
+    function renderDashboard() {
+      const calcMetrics = (arr) => arr.reduce((t, r) => {
+        t.ofd += r.ofd; t.del += r.del; t.orc += r.orc; t.cnr += r.cnr; t.rfr += r.rfr; t.heavy += r.heavyLoad;
+        return t;
+      }, { ofd:0, del:0, orc:0, cnr:0, rfr:0, heavy:0 });
+
+      // Daily Hero: Total OFD 1st, DEL 2nd
+      const tTot = calcMetrics(todayData);
+      const tRateNum = tTot.ofd ? (tTot.del / tTot.ofd) * 100 : 0;
+      const tRateStr = tTot.ofd ? ((tTot.del / tTot.ofd) * 100).toFixed(2) + "%" : "0.00%";
+      document.getElementById('dailyHeroConv').textContent = tRateStr;
+      document.getElementById('dailyHeroAgents').textContent = todayData.length;
+      document.getElementById('dailyHeroOfd').textContent = tTot.ofd;
+      document.getElementById('dailyHeroDel').textContent = tTot.del;
+
+      document.getElementById('dailyOrc').textContent = tTot.orc;
+      document.getElementById('dailyCnr').textContent = tTot.cnr;
+      document.getElementById('dailyRfr').textContent = tTot.rfr;
+      document.getElementById('dailyHeavy').textContent = tTot.heavy;
+      updateSvgMeter('dailyMeterCircle', tRateNum);
+
+      // Overall Hero: Total OFD 1st, DEL 2nd
+      const cTot = calcMetrics(cumulativeData);
+      const cRateNum = cTot.ofd ? (cTot.del / cTot.ofd) * 100 : 0;
+      const cRateStr = cTot.ofd ? ((cTot.del / cTot.ofd) * 100).toFixed(2) + "%" : "0.00%";
+      document.getElementById('cumHeroConv').textContent = cRateStr;
+      document.getElementById('cumHeroAgents').textContent = cumulativeData.length;
+      document.getElementById('cumHeroOfd').textContent = cTot.ofd;
+      document.getElementById('cumHeroDel').textContent = cTot.del;
+
+      document.getElementById('cumOrc').textContent = cTot.orc;
+      document.getElementById('cumCnr').textContent = cTot.cnr;
+      document.getElementById('cumRfr').textContent = cTot.rfr;
+      document.getElementById('cumHeavy').textContent = cTot.heavy;
+      updateSvgMeter('cumMeterCircle', cRateNum);
+
+      renderTables();
+    }
+
+    // Light Theme Agent Card
+    function renderAgentCard(agent) {
+      const pct = parseFloat(agent.conversion) || 0;
+      const barColor = pct >= 85 ? "from-emerald-500 to-teal-500" : (pct >= 83 ? "from-amber-400 to-yellow-500" : "from-rose-500 to-red-500");
+      const initials = agent.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "WM";
+
+      return `
+        <div class="glass-card rounded-2xl p-3.5 space-y-2.5 border-slate-200 hover:border-sky-300 transition shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 truncate">
+              <div class="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center font-mono font-black text-xs text-sky-700 shrink-0">
+                ${initials}
+              </div>
+              <div class="truncate">
+                <span class="font-black text-xs text-slate-900 truncate block">${escapeHTML(agent.name)}</span>
+                <span class="text-[10px] text-slate-600 font-mono font-bold">OFD: <strong class="text-slate-900">${agent.ofd}</strong> • DEL: <strong class="text-emerald-700">${agent.del}</strong></span>
+              </div>
+            </div>
+            ${getConvBadge(agent.conversion)}
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="space-y-1">
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+              <div class="bg-gradient-to-r ${barColor} h-1.5 rounded-full transition-all duration-500" style="width: ${Math.min(100, pct)}%"></div>
+            </div>
+          </div>
+
+          <!-- Clean Micro status indicators without (can), (call), (resch) -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] font-mono font-bold text-slate-600">
+            <span>ORC: <strong class="text-rose-600 font-black">${agent.orc}</strong></span>
+            <span>CNR: <strong class="text-amber-600 font-black">${agent.cnr}</strong></span>
+            <span>RFR: <strong class="text-indigo-600 font-black">${agent.rfr}</strong></span>
+            <span>Heavy: <strong class="text-sky-600 font-black">${agent.heavyLoad}</strong></span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTables() {
+      const qD = (document.getElementById('searchDaily')?.value || "").toLowerCase().trim();
+      const qO = (document.getElementById('searchOverall')?.value || "").toLowerCase().trim();
+
+      const fToday = todayData.filter(r => r.name.toLowerCase().includes(qD));
+      const fCum = cumulativeData.filter(r => r.name.toLowerCase().includes(qO));
+
+      // Daily
+      const dailyCardsEl = document.getElementById('dailyCardsContainer');
+      const dailyTableEl = document.getElementById('todayTable');
+
+      if (fToday.length === 0) {
+        dailyCardsEl.innerHTML = `<div class="glass-card p-8 rounded-2xl text-center text-slate-400 text-xs font-bold">No Wishmasters found</div>`;
+        dailyTableEl.innerHTML = `<tr><td colspan="8" class="p-6 text-slate-400 text-center font-mono font-bold">No records found</td></tr>`;
+      } else {
+        dailyCardsEl.innerHTML = fToday.map(renderAgentCard).join("");
+        dailyTableEl.innerHTML = fToday.map(r => `
+          <tr class="hover:bg-sky-50/50 border-b border-slate-100">
+            <td class="p-3 text-left font-black text-slate-900 sticky-light-col whitespace-nowrap">${escapeHTML(r.name)}</td>
+            <td class="p-3 font-mono font-bold">${getConvBadge(r.conversion)}</td>
+            <td class="p-3 font-mono font-black text-slate-900">${r.ofd}</td>
+            <td class="p-3 font-mono text-emerald-700 font-black">${r.del}</td>
+            <td class="p-3 font-mono text-rose-600 font-bold">${r.orc}</td>
+            <td class="p-3 font-mono text-amber-600 font-bold">${r.cnr}</td>
+            <td class="p-3 font-mono text-indigo-600 font-bold">${r.rfr}</td>
+            <td class="p-3 font-mono text-sky-600 font-bold">${r.heavyLoad}</td>
+          </tr>
+        `).join("");
+      }
+
+      // Overall
+      const cumCardsEl = document.getElementById('cumCardsContainer');
+      const cumTableEl = document.getElementById('cumulativeTable');
+
+      if (fCum.length === 0) {
+        cumCardsEl.innerHTML = `<div class="glass-card p-8 rounded-2xl text-center text-slate-400 text-xs font-bold">No Wishmasters found</div>`;
+        cumTableEl.innerHTML = `<tr><td colspan="8" class="p-6 text-slate-400 text-center font-mono font-bold">No records found</td></tr>`;
+      } else {
+        cumCardsEl.innerHTML = fCum.map(renderAgentCard).join("");
+        cumTableEl.innerHTML = fCum.map(r => `
+          <tr class="hover:bg-indigo-50/50 border-b border-slate-100">
+            <td class="p-3 text-left font-black text-slate-900 sticky-light-col whitespace-nowrap">${escapeHTML(r.name)}</td>
+            <td class="p-3 font-mono font-bold">${getConvBadge(r.conversion)}</td>
+            <td class="p-3 font-mono font-black text-slate-900">${r.ofd}</td>
+            <td class="p-3 font-mono text-emerald-700 font-black">${r.del}</td>
+            <td class="p-3 font-mono text-rose-600 font-bold">${r.orc}</td>
+            <td class="p-3 font-mono text-amber-600 font-bold">${r.cnr}</td>
+            <td class="p-3 font-mono text-indigo-600 font-bold">${r.rfr}</td>
+            <td class="p-3 font-mono text-sky-600 font-bold">${r.heavyLoad}</td>
+          </tr>
+        `).join("");
+      }
+    }
+
+    function formatCellDisplay(column, value) {
+      if (value === null || value === undefined || value === "") return "";
+      const str = String(value);
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(str)) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+      if (/(conv|%|\brate\b)/i.test(column)) {
+        const numeric = Number(str.replace(/,/g, "").replace(/%$/, ""));
+        if (Number.isFinite(numeric)) {
+          const pct = (!str.includes("%") && numeric > 0 && numeric <= 1) ? (numeric * 100) : numeric;
+          return getConvBadge(pct);
+        }
+      }
+      return escapeHTML(str);
+    }
+
+    // ==================== PICKUP SECTION ====================
+    function renderPickupCard(row, idx) {
+      const keys = Object.keys(row || {});
+      const trackKey = keys.find(k => /(tracking|awb|waybill|order|id)/i.test(k)) || keys[0];
+      const statusKey = keys.find(k => /(status|state|remark)/i.test(k));
+      const agentKey = keys.find(k => /(agent|wishmaster|fe|rider|courier|name)/i.test(k));
+      const dateKey = keys.find(k => /(date|time|created)/i.test(k));
+
+      const trackingId = String(row[trackKey] || `Record #${idx + 1}`);
+      const statusVal = statusKey ? String(row[statusKey] || "").trim() : "";
+      const agentVal = agentKey ? String(row[agentKey] || "").trim() : "";
+      const dateVal = dateKey ? formatCellDisplay(dateKey, row[dateKey]) : "";
+
+      let statusStyle = "bg-slate-100 text-slate-800 border-slate-300";
+      if (/deliv|done|pick|succ|comp/i.test(statusVal)) {
+        statusStyle = "bg-emerald-50 text-emerald-800 border-emerald-300";
+      } else if (/pend|open|assign|prog/i.test(statusVal)) {
+        statusStyle = "bg-amber-50 text-amber-800 border-amber-300";
+      } else if (/canc|fail|reject|rto|rfr/i.test(statusVal)) {
+        statusStyle = "bg-rose-50 text-rose-800 border-rose-300";
+      }
+
+      const exclude = [trackKey, statusKey, agentKey, dateKey].filter(Boolean);
+      const extraCols = keys.filter(k => !exclude.includes(k) && row[k] !== "" && row[k] != null).slice(0, 3);
+
+      return `
+        <div class="glass-card rounded-2xl p-3.5 space-y-2.5 border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 truncate">
+              <span class="font-mono font-black text-xs text-slate-900 truncate">${escapeHTML(trackingId)}</span>
+              <button onclick="copyText('${escapeHTML(trackingId)}')" title="Copy Tracking ID" class="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center shrink-0 active:scale-90 hover:text-slate-900 shadow-xs">
+                <i class="fa-regular fa-copy text-[10px]"></i>
+              </button>
+            </div>
+            ${statusVal ? `<span class="px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-black border ${statusStyle}">${escapeHTML(statusVal)}</span>` : ''}
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-600">
+            <span class="flex items-center gap-1.5 truncate">
+              <i class="fa-solid fa-person-military-pointing text-purple-600"></i>
+              <strong class="text-slate-900 font-bold">${escapeHTML(agentVal || "Unassigned FE")}</strong>
+            </span>
+            ${dateVal ? `<span class="font-mono text-[10px] text-slate-500 font-bold shrink-0">${dateVal}</span>` : ''}
+          </div>
+
+          ${extraCols.length ? `
+            <div class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100 text-[10px] font-mono font-bold">
+              ${extraCols.map(k => `
+                <span class="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700">
+                  <span class="text-slate-500">${escapeHTML(k)}:</span> ${escapeHTML(String(row[k]))}
+                </span>
+              `).join("")}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function renderSheetRows(container, rawRows) {
+      const rows = normalizeSheetPayload(rawRows);
+      if (!Array.isArray(rows) || !rows.length) {
+        container.innerHTML = '<p class="text-center text-slate-400 py-8 font-bold">No records found.</p>';
+        return;
+      }
+      const columns = [...new Set(rows.flatMap(row => Object.keys(row || {})))].filter(Boolean);
+      container.innerHTML = `
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-xs text-center border-collapse">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-black border-b border-slate-200">
+              <tr>
+                ${columns.map(col => `<th class="p-3 text-center">${escapeHTML(col)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-bold text-slate-800">
+              ${rows.map(row => `
+                <tr class="hover:bg-slate-50">
+                  ${columns.map((col, idx) => `
+                    <td class="p-3 ${idx === 0 ? 'text-left font-black text-slate-900 whitespace-nowrap' : ''}">
+                      ${formatCellDisplay(col, row?.[col])}
+                    </td>
+                  `).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    async function loadPickupData(forceRefresh = false) {
+      const cardsEl = document.getElementById("pickupCardsContainer");
+      const button = document.getElementById("pickupRefreshButton");
+      if (!forceRefresh && rawPickupRows.length > 0) {
+        filterPickupTable();
+        return;
+      }
+      button.disabled = true;
+      cardsEl.innerHTML = '<div class="glass-card py-8 rounded-2xl text-center text-slate-500 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2 text-purple-600"></i>Querying Pickup records...</div>';
+
+      try {
+        let rows = [];
+        try {
+          const url = new URL(APPS_SCRIPT_URL);
+          url.searchParams.set("action", "pickup");
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            rows = normalizeSheetPayload(data.pickupData || data.pickup || data.rows || []);
+          }
+        } catch (e) {}
+
+        if (!rows || rows.length === 0) {
+          rows = await fetchDirectGoogleSheetTab(["pickup", "Pickup"]);
+        }
+
+        rawPickupRows = rows || [];
+        filterPickupTable();
+      } catch (err) {
+        console.error("Pickup load error:", err);
+        filterPickupTable();
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function filterPickupTable() {
+      const q = (document.getElementById("searchPickup")?.value || "").toLowerCase().trim();
+      const countBadge = document.getElementById("pickupCountBadge");
+      const cardsEl = document.getElementById("pickupCardsContainer");
+      const tableEl = document.getElementById("pickupContent");
+
+      const filtered = !q ? rawPickupRows : rawPickupRows.filter(r =>
+        Object.values(r || {}).some(val => String(val ?? "").toLowerCase().includes(q))
+      );
+
+      if (countBadge) countBadge.textContent = `${filtered.length} Shipments`;
+
+      if (filtered.length === 0) {
+        cardsEl.innerHTML = '<div class="glass-card p-8 rounded-2xl text-center text-slate-400 text-xs font-bold">No pickup records matched</div>';
+      } else {
+        cardsEl.innerHTML = filtered.map((r, i) => renderPickupCard(r, i)).join("");
+      }
+
+      renderSheetRows(tableEl, filtered);
+    }
+
+    // ==================== DATE WISE LOGIC ====================
+    function normalizeDateOnly(val) {
+      if (!val) return "";
+      const str = String(val).trim();
+      const pad = n => String(n).padStart(2, "0");
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+      let m = str.match(/^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})/);
+      if (m) return `${m[1]}-${pad(+m[2] + 1)}-${pad(m[3])}`;
+      m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+      if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+      const d = /[a-z]{3}/i.test(str) ? new Date(str) : new Date(NaN);
+      if (!isNaN(d.getTime())) return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      return "";
+    }
+
+    function parseConversionAgents(result) {
+      if (!result || !result.rows || !result.rows.length) return [];
+      const headers = (result.headers || []).map(h => normalize(h));
+      const idxName = headers.findIndex(h => h.includes("wishmaster") || h.includes("agent") || h.includes("name"));
+      const idxOfd = headers.findIndex(h => h.includes("ofd"));
+      const idxDel = headers.findIndex(h => h.includes("del"));
+      const idxOrc = headers.findIndex(h => h.includes("orc") || h.includes("cancel"));
+      const idxCnr = headers.findIndex(h => h.includes("cnr"));
+      const idxRfr = headers.findIndex(h => h.includes("rfr"));
+      const idxHeavy = headers.findIndex(h => h.includes("heavy") || h.includes("load"));
+      const idxConv = headers.findIndex(h => h.includes("conv"));
+
+      return result.rows.filter(r => {
+        const first = String(r[0] ?? "").toLowerCase();
+        return first && !first.includes("total") && !first.includes("grand");
+      }).map((r, i) => {
+        const ofd = toNumber(r[idxOfd !== -1 ? idxOfd : 1]);
+        const del = toNumber(r[idxDel !== -1 ? idxDel : 2]);
+        return {
+          name: String(r[idxName !== -1 ? idxName : 0] || `Agent ${i + 1}`).trim(),
+          ofd, del,
+          orc: toNumber(r[idxOrc !== -1 ? idxOrc : 3]),
+          cnr: toNumber(r[idxCnr !== -1 ? idxCnr : 4]),
+          rfr: toNumber(r[idxRfr !== -1 ? idxRfr : 5]),
+          heavyLoad: toNumber(r[idxHeavy !== -1 ? idxHeavy : 6]),
+          conversion: ofd > 0 ? ((del / ofd) * 100).toFixed(2) : (idxConv !== -1 ? toNumber(r[idxConv]).toFixed(2) : "0.00")
+        };
+      });
+    }
+
+    function renderConversionAgents() {
+      const q = (document.getElementById("searchConversion")?.value || "").toLowerCase().trim();
+      const cardsEl = document.getElementById("convCardsContainer");
+      const tableEl = document.getElementById("conversionContent");
+
+      const filtered = currentConversionAgents.filter(a => a.name.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        cardsEl.innerHTML = '<div class="glass-card p-8 rounded-2xl text-center text-slate-400 text-xs font-bold">No Wishmasters found for this date</div>';
+      } else {
+        cardsEl.innerHTML = filtered.map(renderAgentCard).join("");
+      }
+
+      if (currentConversionResult) {
+        if (!filtered.length) {
+          tableEl.innerHTML = '<p class="text-center text-slate-400 py-8 font-bold">No records available for this date.</p>';
+          return;
+        }
+        tableEl.innerHTML = `
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-xs text-center border-collapse">
+              <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-black border-b border-slate-200">
+                <tr>
+                  <th class="p-3 text-left sticky-light-col">Wishmaster</th>
+                  <th class="p-3">Conv %</th>
+                  <th class="p-3">OFD</th>
+                  <th class="p-3 text-emerald-700">DEL</th>
+                  <th class="p-3 text-rose-600">ORC</th>
+                  <th class="p-3 text-amber-600">CNR</th>
+                  <th class="p-3 text-indigo-600">RFR</th>
+                  <th class="p-3 text-sky-600">Heavy</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-bold text-slate-800">
+                ${filtered.map(a => `
+                  <tr class="hover:bg-sky-50/50">
+                    <td class="p-3 text-left font-black text-slate-900 sticky-light-col whitespace-nowrap">${escapeHTML(a.name)}</td>
+                    <td class="p-3 font-mono font-bold">${getConvBadge(a.conversion)}</td>
+                    <td class="p-3 font-mono font-black text-slate-900">${a.ofd}</td>
+                    <td class="p-3 font-mono text-emerald-700 font-black">${a.del}</td>
+                    <td class="p-3 font-mono text-rose-600 font-bold">${a.orc}</td>
+                    <td class="p-3 font-mono text-amber-600 font-bold">${a.cnr}</td>
+                    <td class="p-3 font-mono text-indigo-600 font-bold">${a.rfr}</td>
+                    <td class="p-3 font-mono text-sky-600 font-bold">${a.heavyLoad}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>`;
+      }
+    }
+
+    function showConversion(result, wanted) {
+      currentConversionResult = result;
+      currentConversionAgents = parseConversionAgents(result);
+
+      const dateInput = document.getElementById("conversionDate");
+      if (!wanted && result.selectedDate) dateInput.value = result.selectedDate;
+
+      const cTot = currentConversionAgents.reduce((t, a) => {
+        t.ofd += a.ofd; t.del += a.del; t.orc += a.orc; t.cnr += a.cnr; t.rfr += a.rfr; t.heavy += a.heavyLoad;
+        return t;
+      }, { ofd: 0, del: 0, orc: 0, cnr: 0, rfr: 0, heavy: 0 });
+
+      // Total OFD 1st, Delivered 2nd
+      const cRateNum = cTot.ofd ? (cTot.del / cTot.ofd) * 100 : 0;
+      const cRateStr = cTot.ofd ? ((cTot.del / cTot.ofd) * 100).toFixed(2) + "%" : "0.00%";
+      document.getElementById('convHeroConv').textContent = cRateStr;
+      document.getElementById('convHeroAgents').textContent = currentConversionAgents.length;
+      document.getElementById('convHeroOfd').textContent = cTot.ofd;
+      document.getElementById('convHeroDel').textContent = cTot.del;
+
+      document.getElementById('convOrc').textContent = cTot.orc;
+      document.getElementById('convCnr').textContent = cTot.cnr;
+      document.getElementById('convRfr').textContent = cTot.rfr;
+      document.getElementById('convHeavy').textContent = cTot.heavy;
+      updateSvgMeter('convMeterCircle', cRateNum);
+
+      renderConversionAgents();
+    }
+
+    function onConversionDateChange() { loadConversionData(false); }
+
+    function gvizQuery(sheetName, tq, opts = {}) {
+      const { headers = 1, range = "", formatted = false } = opts;
+      return new Promise((resolve) => {
+        const cb = "gvizQ_" + Math.random().toString(36).slice(2);
+        const script = document.createElement("script");
+        let done = false;
+        let timer = null;
+        const finish = (val) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          delete window[cb];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          resolve(val);
+        };
+        const val = c => c ? ((formatted ? (c.f ?? c.v) : c.v) ?? "") : "";
+        timer = setTimeout(() => finish(null), 15000);
+        window[cb] = (resp) => {
+          try {
+            if (!resp || resp.status === "error" || !resp.table) return finish(null);
+            finish((resp.table.rows || []).map(r => (r && r.c ? r.c : []).map(val)));
+          } catch (e) { finish(null); }
+        };
+        script.onerror = () => finish(null);
+        script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&headers=${headers}&sheet=${encodeURIComponent(sheetName)}`
+          + (range ? `&range=${encodeURIComponent(range)}` : "")
+          + (tq ? `&tq=${encodeURIComponent(tq)}` : "");
+        document.body.appendChild(script);
+      });
+    }
+
+    function buildConversionFromMtd(rows) {
+      const map = new Map();
+      rows.forEach(r => {
+        const name = String(r[0] ?? "").trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        let a = map.get(key);
+        if (!a) { a = { name, ofd: 0, del: 0, orc: 0, cnr: 0, rfr: 0, heavy: 0 }; map.set(key, a); }
+        a.ofd += toNumber(r[1]); a.del += toNumber(r[2]); a.orc += toNumber(r[3]);
+        a.cnr += toNumber(r[4]); a.rfr += toNumber(r[5]); a.heavy += toNumber(r[6]);
+      });
+      const list = [...map.values()].map(a => ({ ...a, conv: a.ofd ? a.del / a.ofd : 0 }));
+      list.sort((x, y) => (y.conv - x.conv) || (y.ofd - x.ofd));
+      return {
+        headers: ["Wishmaster", "OFD", "DEL", "ORC", "CNR", "RFR", "Heavy Load", "Conversion %"],
+        rows: list.map(a => [a.name, a.ofd, a.del, a.orc, a.cnr, a.rfr, a.heavy, (a.conv * 100).toFixed(2) + "%"].map(String))
+      };
+    }
+
+    async function getLatestMtdDate() {
+      const rows = await gvizQuery("MTD Data", "select max(Q)");
+      if (!rows || !rows.length) return "";
+      return normalizeDateOnly(rows[0][0]);
+    }
+
+    async function loadFromMtd(dateStr) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+      const base = "select D, F, G, J, I, K, L where D is not null and ";
+      const attempts = [`Q = date '${dateStr}'`, `Q = '${dateStr}'`];
+      for (const cond of attempts) {
+        const rows = await gvizQuery("MTD Data", base + cond);
+        if (rows) return { selectedDate: dateStr, source: "MTD Data", ...buildConversionFromMtd(rows) };
+      }
+      return null;
+    }
+
+    async function loadFromChabuaHubTab() {
+      const dateRows = await gvizQuery("ChabuaHub", "", { headers: 0, range: "B1:B1", formatted: true });
+      const bodyRows = await gvizQuery("ChabuaHub", "", { headers: 0, range: "A3:H300", formatted: true });
+      if (!bodyRows) return null;
+      const rows = bodyRows
+        .map(r => Array.from({ length: 8 }, (_, i) => String(r[i] ?? "").trim()))
+        .filter(r => r.some(c => c !== "") && !/no data found/i.test(r[0]));
+      return {
+        selectedDate: normalizeDateOnly(dateRows && dateRows[0] ? dateRows[0][0] : ""),
+        source: "ChabuaHub tab",
+        headers: ["Wishmaster", "OFD", "DEL", "ORC", "CNR", "RFR", "Heavy Load", "Conversion %"],
+        rows
+      };
+    }
+
+    async function loadConversionData(forceRefresh = false) {
+      const cardsEl = document.getElementById("convCardsContainer");
+      const button = document.getElementById("conversionRefreshButton");
+      const dateInput = document.getElementById("conversionDate");
+      let wanted = dateInput.value || "";
+      if (!forceRefresh && wanted && conversionCache[wanted]) { showConversion(conversionCache[wanted], wanted); return; }
+
+      const reqId = ++conversionReqId;
+      button.disabled = true;
+      cardsEl.innerHTML = '<div class="glass-card py-8 rounded-2xl text-center text-slate-500 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2 text-sky-600"></i>Loading Date Wise records...</div>';
+
+      try {
+        if (!wanted) {
+          wanted = await getLatestMtdDate();
+          if (reqId !== conversionReqId) return;
+          if (wanted) dateInput.value = wanted;
+        }
+        let result = null;
+        const mtd = wanted ? await loadFromMtd(wanted) : null;
+        if (mtd && mtd.rows.length) {
+          result = mtd;
+        } else {
+          const sheetRes = await loadFromChabuaHubTab();
+          if (sheetRes && sheetRes.rows.length && (!wanted || sheetRes.selectedDate === wanted)) result = sheetRes;
+          else if (mtd) result = { selectedDate: wanted, source: "MTD Data", headers: [], rows: [] };
+          else result = sheetRes;
+        }
+        if (reqId !== conversionReqId) return;
+        if (!result) throw new Error("No data");
+        const key = wanted || result.selectedDate || "__current__";
+        if (!wanted || !result.selectedDate || result.selectedDate === wanted) conversionCache[key] = result;
+        showConversion(result, wanted);
+      } catch (err) {
+        console.error("Date Wise load error:", err);
+        if (reqId !== conversionReqId) return;
+        cardsEl.innerHTML = '<div class="glass-card p-8 rounded-2xl text-center text-rose-600 font-bold">Data retrieval failed. Please retry.</div>';
+      } finally {
+        if (reqId === conversionReqId) button.disabled = false;
+      }
+    }
+
+    // ==================== SCANNER LOGIC ====================
+    function setScannerMode(mode) {
+      scannerMode = mode;
+      document.getElementById('modeSingleBtn').className = mode === 'single' ? 'px-3 py-1 rounded-lg bg-white text-slate-900 shadow-sm transition' : 'px-3 py-1 rounded-lg text-slate-500 hover:text-slate-900 transition';
+      document.getElementById('modeBatchBtn').className = mode === 'batch' ? 'px-3 py-1 rounded-lg bg-white text-slate-900 shadow-sm transition' : 'px-3 py-1 rounded-lg text-slate-500 hover:text-slate-900 transition';
+      document.getElementById('exportBatchBtn').classList.toggle('hidden', mode !== 'batch' || scanHistory.length === 0);
+      showToast(`Scanner: ${mode.toUpperCase()} MODE`);
+    }
+
+    function toggleCamera() {
+      cameraActive = !cameraActive;
+      const btn = document.getElementById('toggleCamBtn');
+      const readerEl = document.getElementById('reader');
+      const laserEl = document.getElementById('laserLine');
+      if (cameraActive) {
+        btn.innerHTML = `<i class="fa-solid fa-video-slash text-xs"></i> <span>Stop Camera</span>`;
+        readerEl.style.display = 'block';
+        if (laserEl) laserEl.style.display = 'block';
+        startScanner();
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-video text-xs"></i> <span>Start Camera</span>`;
+        readerEl.style.display = 'none';
+        if (laserEl) laserEl.style.display = 'none';
+        stopScanner();
+      }
+    }
+
+    function startScanner() {
+      if (!cameraActive || scannerInstance) return;
+      const readerEl = document.getElementById('reader');
+      if (!readerEl || readerEl.offsetParent === null) return;
+      const laserEl = document.getElementById('laserLine');
+      if (laserEl) laserEl.style.display = 'block';
+      try {
+        const scanCfg = { fps: 15, qrbox: { width: 240, height: 110 }, rememberLastUsedCamera: true };
+        if (window.Html5QrcodeScanType) scanCfg.supportedScanTypes = [Html5QrcodeScanType.SCAN_TYPE_CAMERA];
+        scannerInstance = new Html5QrcodeScanner("reader", scanCfg, false);
+        scannerInstance.render(onScanSuccess, () => {});
+      } catch (e) {
+        console.error("Scanner init error:", e);
+      }
+    }
+
+    function stopScanner() {
+      const laserEl = document.getElementById('laserLine');
+      if (laserEl) laserEl.style.display = 'none';
+      if (scannerInstance) {
+        try { scannerInstance.clear().catch(e => console.warn(e)); } catch(e) {}
+        scannerInstance = null;
+      }
+    }
+
+    function onScanSuccess(text) {
+      const now = Date.now();
+      if (text === lastScanCode && now - lastScanTime < 3000) return;
+      lastScanCode = text;
+      lastScanTime = now;
+      processBarcode(text);
+    }
+
+    function manualScan() {
+      const el = document.getElementById('manualInput');
+      const val = el ? el.value.trim() : '';
+      if (val) {
+        processBarcode(val);
+        el.value = '';
+      }
+    }
+
+    function pickField(data, nameParts, excludeParts = []) {
+      const sources = [data, data?.data, data?.result, data?.row, data?.order].filter(o => o && typeof o === 'object');
+      for (const obj of sources) {
+        for (const [k, v] of Object.entries(obj)) {
+          const nk = normalize(k);
+          if (v === "" || v == null) continue;
+          if (nameParts.some(p => nk.includes(p)) && !excludeParts.some(p => nk.includes(p))) return v;
+        }
+      }
+      return "";
+    }
+
+    async function lookupViaSheet(id) {
+      const safe = String(id).replace(/[^A-Za-z0-9_\-]/g, "").toUpperCase();
+      if (!safe) return null;
+      const rows = await gvizQuery("order id", `select A, F, Q, Y where upper(A) = '${safe}' limit 1`);
+      if (!rows || !rows.length) return null;
+      const [track, price, bag, order] = rows[0];
+      return {
+        trackingId: String(track ?? ""),
+        price: (price === "" || price == null) ? "" : price,
+        bagId: String(bag ?? "").trim(),
+        orderId: String(order ?? "").trim()
+      };
+    }
+
+    async function processBarcode(scannedId) {
+      if (!scannedId) return;
+      const clean = scannedId.trim().toUpperCase();
+
+      const box = document.getElementById('scannerResultBox');
+      const badge = document.getElementById('scanStatusBadge');
+      const resOrder = document.getElementById('resOrderId');
+      const resPrice = document.getElementById('resPrice');
+      const resBag = document.getElementById('resBagId');
+      const resTrack = document.getElementById('resTrackingId');
+      const timeEl = document.getElementById('scanTime');
+
+      box.classList.remove('hidden');
+      badge.textContent = "QUERYING...";
+      badge.className = "text-[10px] font-mono font-black bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded";
+      resOrder.textContent = "Searching spreadsheet records...";
+      resPrice.textContent = "--";
+      resBag.textContent = "--";
+      resTrack.textContent = clean;
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      timeEl.textContent = timeStr;
+
+      let data = null;
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?trackingId=${encodeURIComponent(clean)}`);
+        if (res.ok) data = await res.json();
+      } catch (e) { console.warn("Fetch failed:", e); }
+
+      let found = !!(data && data.status === 'success');
+      let orderId = data ? String(data.orderId || pickField(data, ["orderid"]) || "") : "";
+      let priceRaw = data ? pickField(data, ["price", "amount"], ["status"]) : "";
+      let bagId = data ? String(pickField(data, ["bag"], ["status"]) || data.columnQ || data.colQ || data.q || "") : "";
+
+      if (!found || priceRaw === "" || !bagId || !orderId) {
+        const info = await lookupViaSheet(clean);
+        if (info) {
+          found = true;
+          orderId = orderId || info.orderId;
+          if (priceRaw === "") priceRaw = info.price;
+          bagId = bagId || info.bagId;
+        }
+      }
+
+      const bagText = bagId || "N/A";
+      const priceNum = priceRaw !== "" ? priceRaw : 0;
+
+      if (found) {
+        badge.textContent = "VERIFIED";
+        badge.className = "text-[10px] font-mono font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded";
+        resOrder.textContent = orderId || "N/A";
+        resPrice.textContent = priceRaw !== "" ? `₹${priceRaw}` : "--";
+        resBag.textContent = bagText;
+        playTone(true);
+      } else {
+        badge.textContent = "NOT FOUND";
+        badge.className = "text-[10px] font-mono font-black bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded";
+        resOrder.textContent = "No Order ID Found";
+        resPrice.textContent = "₹0";
+        resBag.textContent = "N/A";
+        playTone(false);
+      }
+
+      scanHistory.unshift({
+        trackingId: clean,
+        orderId: found ? (orderId || "N/A") : "N/A",
+        price: found ? priceNum : 0,
+        bagId: found ? bagText : "N/A",
+        status: found ? 'VERIFIED' : 'NOT FOUND',
+        time: timeStr
+      });
+      updateScanHistoryUI();
+    }
+
+    function updateScanHistoryUI() {
+      const listEl = document.getElementById('scanHistoryList');
+      document.getElementById('historyCount').textContent = scanHistory.length;
+      document.getElementById('batchCount').textContent = scanHistory.length;
+      document.getElementById('exportBatchBtn').classList.toggle('hidden', scannerMode !== 'batch' || scanHistory.length === 0);
+
+      if (scanHistory.length === 0) {
+        listEl.innerHTML = '<div class="text-center py-4 text-slate-400 font-bold text-xs font-mono">No items scanned yet in this session.</div>';
+        return;
+      }
+
+      listEl.innerHTML = scanHistory.map((item) => {
+        const isVer = item.status === 'VERIFIED';
+        return `
+          <div class="p-2.5 rounded-xl border ${isVer ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'} flex items-center justify-between gap-2 shadow-xs">
+            <div class="truncate">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-black text-slate-900 text-[11px]">${escapeHTML(item.trackingId)}</span>
+                <span class="text-[9px] font-mono font-black px-1.5 rounded ${isVer ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${item.status}</span>
+              </div>
+              <div class="text-[10px] font-mono text-slate-600 truncate mt-0.5">Order: <strong class="text-slate-900">${escapeHTML(item.orderId)}</strong> | Bag: ${escapeHTML(item.bagId)} | ₹${item.price}</div>
+            </div>
+            <button onclick="copyText('${escapeHTML(item.orderId)}')" class="w-7 h-7 rounded-lg bg-white text-slate-700 border border-slate-300 flex items-center justify-center shrink-0 active:scale-90 hover:text-slate-900 shadow-xs">
+              <i class="fa-regular fa-copy text-xs"></i>
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function clearScanHistory() {
+      scanHistory = [];
+      updateScanHistoryUI();
+      showToast("Scan history reset");
+    }
+
+    async function exportBatchScans() {
+      if (scanHistory.length === 0) return;
+      let text = "Tracking ID\tOrder ID\tBag ID\tPrice\tStatus\tTime\n";
+      scanHistory.forEach(i => {
+        text += `${i.trackingId}\t${i.orderId}\t${i.bagId}\t${i.price}\t${i.status}\t${i.time}\n`;
+      });
+      const ok = await copyText(text);
+      showToast(ok ? "Batch data copied!" : "Export failed", !ok);
+    }
+
+    async function copyOrderId() {
+      const val = document.getElementById('resOrderId').textContent;
+      if (val && val !== "--" && !val.includes("No Order") && !val.includes("Searching")) {
+        const ok = await copyText(val);
+        showToast(ok ? "Order ID copied to clipboard!" : "Copy failed", !ok);
+      }
+    }
+
+    function playTone(success) {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = success ? 900 : 220;
+        g.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + 0.12);
+      } catch(e) {}
+    }
+
+    // ==================== CASH COUNTER ====================
+    function initCashInputs() {
+      const rows = document.getElementById('denomRows');
+      rows.innerHTML = denoms.map(d => {
+        const color = denomColors[d];
+        return `
+          <div class="flex items-center justify-between gap-2 text-xs font-bold bg-white p-2 rounded-xl border border-slate-200 shadow-xs">
+            <div class="flex items-center gap-2 w-28">
+              <span class="w-2 h-2 rounded-full ${color.dot}"></span>
+              <span class="px-2 py-0.5 rounded-md font-mono font-black text-xs ${color.badge}">₹${d} note</span>
+            </div>
+            <span class="text-slate-400 font-mono">×</span>
+            <input type="number" min="0" id="count-${d}" oninput="calculateCash()" placeholder="0" class="w-24 py-1.5 px-2 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-black text-slate-900 focus:outline-none focus:border-sky-500 shadow-inner">
+            <span class="text-slate-400 font-mono">=</span>
+            <span class="w-24 text-right font-mono font-black text-slate-900" id="subtotal-${d}">₹0</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function calculateCash() {
+      let total = 0;
+      denoms.forEach(d => {
+        const count = Math.max(0, parseInt(document.getElementById(`count-${d}`)?.value, 10) || 0);
+        const sub = count * d;
+        total += sub;
+        const el = document.getElementById(`subtotal-${d}`);
+        if (el) el.textContent = `₹${sub.toLocaleString('en-IN')}`;
+      });
+
+      const coins = Math.max(0, parseInt(document.getElementById('count-coins')?.value, 10) || 0);
+      total += coins;
+      const coinsSub = document.getElementById('subtotal-coins');
+      if (coinsSub) coinsSub.textContent = `₹${coins.toLocaleString('en-IN')}`;
+
+      document.getElementById('inpage-total-amount').textContent = `₹${total.toLocaleString('en-IN')}`;
+      document.getElementById('total-in-words').textContent = toIndianWords(total);
+
+      const teller = Math.max(0, parseInt(document.getElementById('teller-balance-input')?.value, 10) || 0);
+      const badge = document.getElementById('tellerStatusBadge');
+      if (teller > 0) {
+        badge.classList.remove('hidden');
+        const diff = total - teller;
+        if (diff === 0) {
+          badge.className = "text-center text-xs font-mono font-black pt-1 text-emerald-700";
+          badge.textContent = "Status: Exact Tally (Balanced) ✓";
+        } else if (diff > 0) {
+          badge.className = "text-center text-xs font-mono font-black pt-1 text-sky-700";
+          badge.textContent = `Status: Excess Cash (+₹${diff.toLocaleString('en-IN')})`;
+        } else {
+          badge.className = "text-center text-xs font-mono font-black pt-1 text-rose-600";
+          badge.textContent = `Status: Short Cash (-₹${Math.abs(diff).toLocaleString('en-IN')})`;
+        }
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function switchCashSubTab(t) {
+      document.getElementById('cashCalcPanel').classList.toggle('hidden', t !== 'calc');
+      document.getElementById('cashReportPanel').classList.toggle('hidden', t !== 'report');
+      const isCalc = t === 'calc';
+      document.getElementById('subTabCalc').className = isCalc ? 'flex-1 py-1.5 text-center text-xs font-black rounded-xl bg-white text-slate-900 shadow-sm transition' : 'flex-1 py-1.5 text-center text-xs font-black rounded-xl text-slate-600 hover:text-slate-900 transition';
+      document.getElementById('subTabReport').className = isCalc ? 'flex-1 py-1.5 text-center text-xs font-black rounded-xl text-slate-600 hover:text-slate-900 transition' : 'flex-1 py-1.5 text-center text-xs font-black rounded-xl bg-white text-slate-900 shadow-sm transition';
+      if (t === 'report') renderCashReport();
+    }
+
+    function renderCashReport() {
+      document.getElementById('report-date-str').textContent = new Date().toLocaleString('en-IN');
+      let total = 0;
+      let html = '';
+
+      denoms.forEach(d => {
+        const c = Math.max(0, parseInt(document.getElementById(`count-${d}`)?.value, 10) || 0);
+        if (c > 0) {
+          const sub = c * d;
+          total += sub;
+          html += `<div class="flex justify-between py-1 border-b border-slate-100"><span>₹${d} × ${c} pcs</span><span class="text-slate-900 font-black">₹${sub.toLocaleString('en-IN')}</span></div>`;
+        }
+      });
+
+      const coins = Math.max(0, parseInt(document.getElementById('count-coins')?.value, 10) || 0);
+      if (coins > 0) {
+        total += coins;
+        html += `<div class="flex justify-between py-1 border-b border-slate-100"><span>Loose Coins</span><span class="text-slate-900 font-black">₹${coins.toLocaleString('en-IN')}</span></div>`;
+      }
+
+      document.getElementById('report-item-list').innerHTML = html || '<p class="text-center text-slate-400 py-4 font-mono font-bold">No cash counted yet</p>';
+      document.getElementById('report-total-sum').textContent = `₹${total.toLocaleString('en-IN')}`;
+    }
+
+    function buildCashReportText() {
+      let t = `*CHABUA HUB - CASH TALLY REPORT*\nDate: ${new Date().toLocaleString('en-IN')}\n--------------------\n`;
+      let total = 0;
+      denoms.forEach(d => {
+        const c = Math.max(0, parseInt(document.getElementById(`count-${d}`)?.value, 10) || 0);
+        if (c > 0) {
+          const s = c * d; total += s;
+          t += `₹${d} x ${c} = ₹${s.toLocaleString('en-IN')}\n`;
+        }
+      });
+      const coins = Math.max(0, parseInt(document.getElementById('count-coins')?.value, 10) || 0);
+      if (coins > 0) { total += coins; t += `Coins = ₹${coins.toLocaleString('en-IN')}\n`; }
+      t += `--------------------\n*GRAND TOTAL: ₹${total.toLocaleString('en-IN')}*\n`;
+      return t;
+    }
+
+    async function copyCashReport() {
+      const ok = await copyText(buildCashReportText());
+      showToast(ok ? "Cash report copied to clipboard!" : "Copy failed", !ok);
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+        throw new Error();
+      } catch (e) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        } catch (e2) { return false; }
+      }
+    }
+
+    function resetCash() {
+      denoms.forEach(d => {
+        const el = document.getElementById(`count-${d}`);
+        if (el) el.value = '';
+      });
+      const coins = document.getElementById('count-coins');
+      if (coins) coins.value = '';
+      const teller = document.getElementById('teller-balance-input');
+      if (teller) teller.value = '';
+      calculateCash();
+      showToast("Cash fields cleared");
+    }
+
+    function toIndianWords(num) {
+      if (!num || isNaN(num)) return "Zero Rupees Only";
+      const a = ['','One ','Two ','Three ','Four ','Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+      const b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      function inWords(n) { return n > 19 ? b[Math.floor(n/10)] + ' ' + a[n%10] : a[n]; }
+      let str = "";
+      if (Math.floor(num / 10000000) > 0) str += inWords(Math.floor(num / 10000000)) + "Crore ";
+      if (Math.floor((num % 10000000) / 100000) > 0) str += inWords(Math.floor((num % 10000000) / 100000)) + "Lakh ";
+      if (Math.floor((num % 100000) / 1000) > 0) str += inWords(Math.floor((num % 100000) / 1000)) + "Thousand ";
+      if (Math.floor((num % 1000) / 100) > 0) str += inWords(Math.floor((num % 1000) / 100)) + "Hundred ";
+      if (num % 100 > 0) str += (str ? "and " : "") + inWords(num % 100);
+      return str.trim() + " Rupees Only";
+    }
+
+    function showToast(msg, isErr = false) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = isErr ? '✕' : '✓';
+      document.getElementById('toastIcon').className = isErr ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold';
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 2400);
+    }
+
+    window.onload = () => {
+      // Set today's date in Date Wise picker as instant default
+      const dateInput = document.getElementById("conversionDate");
+      if (dateInput) {
+        dateInput.value = new Date().toISOString().slice(0, 10);
+      }
+
+      // Initialize default history state for back-button handling
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({ tab: 'daily' }, '', '#daily');
+      }
+
+      initCashInputs();
+      calculateCash();
+      renderDashboard();
+      fetchSheetData();
+      setInterval(() => fetchSheetData(true), 60 * 60 * 1000);
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchOk > 5 * 60 * 1000) {
+        fetchSheetData(true);
+      }
+    });
+    window.addEventListener('online', () => fetchSheetData(true));
+  </script>
+</body>
+</html>
